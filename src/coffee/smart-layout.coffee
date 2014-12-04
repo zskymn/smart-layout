@@ -70,8 +70,7 @@ angular.module 'smart.layout', []
                 spliter.elem.html '<div class="collapse" style="position: absolute; cursor: pointer"><svg><path /></svg></div>'
                 spliter.collapse = spliter.elem.children()
                 spliter.collapse.css @sizeType.begin, '50%'
-                spliter.collapse.css @sizeType.osize, "#{spliter.size * 4}px"
-                spliter.collapse.find('svg').css 'height', "#{spliter.size * 4}px"
+                spliter.collapse.find('svg').css @sizeType.osize, "#{spliter.size * 4}px"
                 spliter.collapse.css "margin-#{@sizeType.begin}", "-#{spliter.size * 2}px"
                 @setCollapseStyle(spliter.collapse, spliter.size, @layoutDirection, spliter.collapseDirection)
                 spliter.collapse.find('path').css 'fill', spliter.collapseColor
@@ -115,7 +114,8 @@ angular.module 'smart.layout', []
           next = @items[spliter.nextItemIdx]
           rawSizeBoth = pre.size + next.size
           if spliter.collapsed
-            pre.size += rawSizeBoth * spliter.preDivBoth
+            pre.size = rawSizeBoth * spliter.preDivBoth
+            console.log pre.size
           else
             if spliter.collapseDirection is 'pre'
               pre.size = pre.minSize
