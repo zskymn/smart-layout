@@ -1,14 +1,43 @@
 <!DOCTYPE HTML>
-<html>
+<html ng-app="app">
+
 <head>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
 
   <title>Smart Layout Demos</title>
+  <link rel="stylesheet" href="../dist/css/smart-layout.css" type="text/css" media="screen" charset="utf-8">
   <script src="../libs/angular.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../dist/js/smart-layout.js" type="text/javascript" charset="utf-8"></script>
   <script src="dist/js/app.js" type="text/javascript" charset="utf-8"></script>
-  
+
 </head>
+
 <body>
-  hello world
+  <div style="width: 1000px; position: absolute; height: 400px">
+    <div smart-layout="{direction: 'column'}">
+      <div size="100" min-size="100" style="background-color: green">
+        <div smart-layout="{direction: 'row'}">
+          <div size="100" min-size="100" fixed style="background-color: green">1</div>
+          <div layout-spliter="{size: '5px', color: 'black'}" collapsable="{direction: 'pre', color: 'white'}"></div>
+          <div size="100" min-size="50" style="background-color: red">2</div>
+          <div layout-spliter="{size: '5px', color: 'black'}" collapsable="{direction: 'pre', color: 'white'}"></div>
+          <div size="100" min-size="50" style="background-color: red">
+            <div smart-layout="{direction: 'column'}">
+              <div size="100" min-size="100" fixed style="background-color: green">1</div>
+              <div layout-spliter="{size: '5px', color: 'black'}" collapsable="{direction: 'pre', color: 'white'}"></div>
+              <div size="100" min-size="50" style="background-color: red">2</div>
+              <div layout-spliter="{size: '5px', color: 'black'}" collapsable="{direction: 'pre', color: 'white'}"></div>
+              <div size="100" min-size="50" style="background-color: red">3</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div layout-spliter="{size: '10px'}" collapsable="{direction: 'next', color: 'white'}"></div>
+      <div size="100" min-size="50" style="background-color: red"></div>
+      <div layout-spliter="{size: '5px', color: 'black'}" collapsable="{direction: 'pre', color: 'white'}"></div>
+      <div size="100" min-size="50" style="background-color: red"></div>
+    </div>
 </body>
+</div>
+
 </html>
