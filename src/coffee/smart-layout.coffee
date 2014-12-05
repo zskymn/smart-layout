@@ -5,7 +5,14 @@ angular.module 'smart.layout', []
     link: (scope, elem, attrs) ->
       class Layout
         constructor: () ->
-          elem.addClass 'layout-stretch'
+          elem.css {
+            position: 'absolute'
+            left: 0
+            right: 0
+            top: 0
+            bottom: 0
+            overflow: 'hidden'
+          }
           layoutOption = $parse(attrs.smartLayout) scope
           @layoutDirection = if layoutOption.direction is 'column' then 'column' else 'row'
           @items = []
@@ -108,6 +115,7 @@ angular.module 'smart.layout', []
             else
               path = "m#{size} 1 l#{size} #{size-2} l#{size} -#{size-2}z"
           collapse.find('path').attr "d", path
+          return
         toggleCollapse: (spliter) ->
           console.log spliter
           pre = @items[spliter.preItemIdx]
@@ -135,7 +143,7 @@ angular.module 'smart.layout', []
           else
             @setCollapseStyle(spliter.collapse, spliter.size, @layoutDirection, if spliter.collapsed then 'pre' else 'next')
           angular.element($window).triggerHandler('resize')
-
+          return
         resize: () ->
           @layoutSize = elem[0][@sizeType.offset]
           rest = Math.max(@layoutSize - @spliterSizeTotal - @fixedSizeTotal, 0)
@@ -157,7 +165,7 @@ angular.module 'smart.layout', []
                   readyItemidxs.push index
                   rest = Math.max(rest - item.size, 0)
           @raw()
-          @layoutSize = elem[0][@sizeType.offset]
+          return
         raw: () ->
           cSize = 0
           for item in @itemAll
@@ -187,26 +195,29 @@ angular.module 'smart.layout', []
                 evt.preventDefault()
                 evt.stopPropagation()
                 angular.element($window).on 'mousemove', (evt) =>
-                    spliter.to = evt[@sizeType.coord]
-                    pre = @items[spliter.preItemIdx]
-                    next = @items[spliter.nextItemIdx]
-                    if (spliter.to > spliter.from and pre.size < pre.maxSize and next.size > next.minSize) or
-                    (spliter.to < spliter.from and pre.size > pre.minSize and next.size < next.maxSize)
-                      rawSizeBoth = pre.size + next.size
-                      pre.size += spliter.to - spliter.from
-                      next.size -= spliter.to - spliter.from
-                      if not (pre.minSize <= pre.size <= pre.maxSize)
-                        pre.size = Math.max pre.minSize, Math.min(pre.size, pre.maxSize)
-                        next.size = rawSizeBoth - pre.size
-                      if not (next.minSize <= next.size <= next.maxSize)
-                        next.size = Math.max next.minSize, Math.min(next.size, next.maxSize)
-                        pre.size = rawSizeBoth - next.size
-                      @raw()
-                      angular.element($window).triggerHandler('resize')
-                    spliter.from = spliter.to
+                  spliter.to = evt[@sizeType.coord]
+                  pre = @items[spliter.preItemIdx]
+                  next = @items[spliter.nextItemIdx]
+                  if (spliter.to > spliter.from and pre.size < pre.maxSize and next.size > next.minSize) or
+                  (spliter.to < spliter.from and pre.size > pre.minSize and next.size < next.maxSize)
+                    rawSizeBoth = pre.size + next.size
+                    pre.size += spliter.to - spliter.from
+                    next.size -= spliter.to - spliter.from
+                    if not (pre.minSize <= pre.size <= pre.maxSize)
+                      pre.size = Math.max pre.minSize, Math.min(pre.size, pre.maxSize)
+                      next.size = rawSizeBoth - pre.size
+                    if not (next.minSize <= next.size <= next.maxSize)
+                      next.size = Math.max next.minSize, Math.min(next.size, next.maxSize)
+                      pre.size = rawSizeBoth - next.size
+                    @raw()
+                    angular.element($window).triggerHandler('resize')
+                  spliter.from = spliter.to
+                  return
+                return
             )(spliter)
           angular.element($window).on 'mouseup', (evt) =>
             angular.element($window).off 'mousemove'
+            return
           return
       new Layout().registerObservers()
       return
