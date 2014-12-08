@@ -1,5 +1,5 @@
 angular.module 'smart.layout', []
-  .directive 'smartLayout', ['$parse', '$window', 'parseSize', ($parse, $window, parseSize) ->
+  .directive 'smartLayout', ['$parse', '$window', '$timeout', 'parseSize', '_debounceResize', ($parse, $window, $timeout, parseSize, _debounceResize) ->
     restrict: 'A'
     scope: true
     link: (scope, elem, attrs) ->
@@ -11,7 +11,7 @@ angular.module 'smart.layout', []
             right: 0
             top: 0
             bottom: 0
-            overflow: 'hidden'
+            overflow: 'auto'
           }
           layoutOption = $parse(attrs.smartLayout) scope
           @layoutDirection = if layoutOption.direction is 'column' then 'column' else 'row'
@@ -22,6 +22,7 @@ angular.module 'smart.layout', []
           @fixedItemIdxs = []
           @itemMinSizeTotal = 0
           @activeSpliterIdx = 0
+          @spliterIsActive = false
           @itemAll = []
           @sizeType =
             size: if @layoutDirection is 'column' then 'width' else 'height'
@@ -39,6 +40,7 @@ angular.module 'smart.layout', []
             child.css 'position', "absolute"
             child.css @sizeType.begin, 0
             child.css @sizeType.end, 0
+            child.css 'overflow', 'auto'
             
             if angular.isUndefined child.attr('layout-spliter')
               item = {}
@@ -68,13 +70,13 @@ angular.module 'smart.layout', []
               spliterOption = $parse(spliter.elem.attr('layout-spliter'))(scope) ? {}
               collapseOption = $parse(spliter.elem.attr('collapsable'))(scope) ? {}
               spliter.size = parseSize.spliter(spliterOption.size)
-              spliter.color = spliterOption.color ? '#222'
+              spliter.color = spliterOption.color ? '#333'
               spliter.collapsable = angular.isDefined spliter.elem.attr('collapsable')
               if spliter.collapsable
                 spliter.collapsed = false
                 spliter.collapseDirection = collapseOption.direction ? 'pre'
                 spliter.collapseColor = collapseOption.color ? '#ddd'
-                spliter.elem.html '<div class="collapse" style="position: absolute; cursor: pointer"><svg><path /></svg></div>'
+                spliter.elem.html '<div style="position: absolute; cursor: pointer"><svg><path /></svg></div>'
                 spliter.collapse = spliter.elem.children()
                 spliter.collapse.css @sizeType.begin, '50%'
                 spliter.collapse.find('svg').css @sizeType.osize, "#{spliter.size * 4}px"
@@ -92,7 +94,7 @@ angular.module 'smart.layout', []
               spliter.elem.remove()
             else
               if spliter.collapsable
-                spliter.preDivBoth = Math.max(preItem.size, 20) / (Math.max(nextItem.size, 20) + Math.max(nextItem.size, 20))
+                spliter.preDivBoth = Math.max(preItem.size, 20) / (Math.max(preItem.size, 20) + Math.max(nextItem.size, 20))
               splitersTmp.push spliter
               @spliterSizeTotal += spliter.size
           @spliters = splitersTmp
@@ -117,13 +119,11 @@ angular.module 'smart.layout', []
           collapse.find('path').attr "d", path
           return
         toggleCollapse: (spliter) ->
-          console.log spliter
           pre = @items[spliter.preItemIdx]
           next = @items[spliter.nextItemIdx]
           rawSizeBoth = pre.size + next.size
           if spliter.collapsed
             pre.size = rawSizeBoth * spliter.preDivBoth
-            console.log pre.size
           else
             if spliter.collapseDirection is 'pre'
               pre.size = pre.minSize
@@ -142,9 +142,10 @@ angular.module 'smart.layout', []
             @setCollapseStyle(spliter.collapse, spliter.size, @layoutDirection, if spliter.collapsed then 'next' else 'pre')
           else
             @setCollapseStyle(spliter.collapse, spliter.size, @layoutDirection, if spliter.collapsed then 'pre' else 'next')
-          angular.element($window).triggerHandler('resize')
+          _debounceResize()
           return
         resize: () ->
+          layoutSizeLast = @layoutSize
           @layoutSize = elem[0][@sizeType.offset]
           rest = Math.max(@layoutSize - @spliterSizeTotal - @fixedSizeTotal, 0)
           readyItemidxs = angular.copy @fixedItemIdxs
@@ -165,6 +166,8 @@ angular.module 'smart.layout', []
                   readyItemidxs.push index
                   rest = Math.max(rest - item.size, 0)
           @raw()
+          if Math.abs(layoutSizeLast - @layoutSize) > 5
+            _debounceResize()
           return
         raw: () ->
           cSize = 0
@@ -179,22 +182,26 @@ angular.module 'smart.layout', []
           return
         registerObservers: () ->
           @resize()
-          setTimeout () =>
-            angular.element($window).triggerHandler('resize')
-          , 200
-          angular.element($window).on 'resize', () => @resize(); return
-          for spliter in @spliters
+          _debounceResize()
+          angular.element($window).on 'resize', () =>
+            @resize()
+            return
+          for spliter, spliter_idx in @spliters
             if spliter.collapsable
               spliter.collapse.on 'click', ((spliter) =>
                 (evt) =>
                   @toggleCollapse(spliter)
               )(spliter)
-            spliter.elem.on 'mousedown', ((spliter) =>
+            spliter.elem.on 'mousedown', ((spliter, spliter_idx) =>
               (evt) =>
                 spliter.from = evt[@sizeType.coord]
+                spliter.delta = 0
                 evt.preventDefault()
                 evt.stopPropagation()
+                @spliterIsActive = true
                 angular.element($window).on 'mousemove', (evt) =>
+                  @activeSpliterIdx = spliter_idx
+                  spliter.elem.css 'z-index', 99999
                   spliter.to = evt[@sizeType.coord]
                   pre = @items[spliter.preItemIdx]
                   next = @items[spliter.nextItemIdx]
@@ -209,15 +216,19 @@ angular.module 'smart.layout', []
                     if not (next.minSize <= next.size <= next.maxSize)
                       next.size = Math.max next.minSize, Math.min(next.size, next.maxSize)
                       pre.size = rawSizeBoth - next.size
-                    @raw()
-                    angular.element($window).triggerHandler('resize')
+                    spliter.elem.css @sizeType.from, parseSize.toPixel(parseInt(spliter.elem.css(@sizeType.from), 10) + spliter.to - spliter.from)
                   spliter.from = spliter.to
                   return
                 return
-            )(spliter)
+            )(spliter, spliter_idx)
           angular.element($window).on 'mouseup', (evt) =>
-            angular.element($window).off 'mousemove'
-            return
+            if @spliterIsActive
+              @raw()
+              _debounceResize()
+              @spliters[@activeSpliterIdx].elem.css 'z-index', 'inherit'
+              angular.element($window).off 'mousemove'
+              return
+            @spliterIsActive = false
           return
       new Layout().registerObservers()
       return
@@ -237,4 +248,20 @@ angular.module 'smart.layout', []
     toPixel: (size) ->
       size + 'px'
   ]
-
+  .factory '_debounceResize', ['$timeout', '$window', ($timeout, $window) ->
+    _debounce = (func, wait) ->
+      timeout = null
+      () ->
+        context = this
+        args = arguments
+        later = () ->
+          timeout = null
+          func.apply(context, args)
+        $timeout.cancel timeout if timeout
+        timeout = $timeout later, wait
+        return
+    _debounce () ->
+      angular.element($window).triggerHandler('resize')
+      return
+    , 300
+  ]
