@@ -76,14 +76,12 @@ angular.module 'smart.layout', []
               if spliter.collapsable
                 spliter.collapsed = false
                 spliter.collapseDirection = collapseOption.direction ? 'pre'
-                spliter.collapseClass = collapseOption.class ? 'layout-collapse-btn'
                 spliter.elem.html '<div style="position: absolute; cursor: pointer"><svg><path /></svg></div>'
                 spliter.collapse = spliter.elem.children()
                 spliter.collapse.css @sizeType.begin, '50%'
                 spliter.collapse.find('svg').css @sizeType.osize, "#{spliter.size * 4}px"
                 spliter.collapse.css "margin-#{@sizeType.begin}", "-#{spliter.size * 2}px"
                 @setCollapseStyle(spliter.collapse, spliter.size, @layoutDirection, spliter.collapseDirection)
-                spliter.collapse.find('path').addClass spliter.collapseClass
               spliter.elem.css 'cursor', @sizeType.spliterCursor
               spliter.elem.addClass spliter.class
               @spliters.push spliter
