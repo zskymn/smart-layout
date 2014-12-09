@@ -2,6 +2,7 @@ angular.module 'smart.layout', []
   .directive 'smartLayout', ['$parse', '$window', '$timeout', 'parseSize', '_debounceResize', ($parse, $window, $timeout, parseSize, _debounceResize) ->
     restrict: 'A'
     scope: true
+    priority: 99
     link: (scope, elem, attrs) ->
       class Layout
         constructor: () ->
@@ -70,21 +71,21 @@ angular.module 'smart.layout', []
               spliterOption = $parse(spliter.elem.attr('layout-spliter'))(scope) ? {}
               collapseOption = $parse(spliter.elem.attr('collapsable'))(scope) ? {}
               spliter.size = parseSize.spliter(spliterOption.size)
-              spliter.color = spliterOption.color ? '#333'
+              spliter.class = spliterOption.class ? 'layout-spliter'
               spliter.collapsable = angular.isDefined spliter.elem.attr('collapsable')
               if spliter.collapsable
                 spliter.collapsed = false
                 spliter.collapseDirection = collapseOption.direction ? 'pre'
-                spliter.collapseColor = collapseOption.color ? '#ddd'
+                spliter.collapseClass = collapseOption.class ? 'layout-collapse-btn'
                 spliter.elem.html '<div style="position: absolute; cursor: pointer"><svg><path /></svg></div>'
                 spliter.collapse = spliter.elem.children()
                 spliter.collapse.css @sizeType.begin, '50%'
                 spliter.collapse.find('svg').css @sizeType.osize, "#{spliter.size * 4}px"
                 spliter.collapse.css "margin-#{@sizeType.begin}", "-#{spliter.size * 2}px"
                 @setCollapseStyle(spliter.collapse, spliter.size, @layoutDirection, spliter.collapseDirection)
-                spliter.collapse.find('path').css 'fill', spliter.collapseColor
+                spliter.collapse.find('path').addClass spliter.collapseClass
               spliter.elem.css 'cursor', @sizeType.spliterCursor
-              spliter.elem.css 'background-color', spliter.color
+              spliter.elem.addClass spliter.class
               @spliters.push spliter
           splitersTmp = []
           for spliter, index in @spliters
