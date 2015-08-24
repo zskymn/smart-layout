@@ -1,0 +1,7 @@
+.layout-spliter {
+  background-color: #333;
+}
+
+.layout-spliter svg path {
+  fill: #ddd;
+}
